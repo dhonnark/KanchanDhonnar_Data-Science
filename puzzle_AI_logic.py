@@ -1,24 +1,25 @@
-import openai
+
 import time
 import random
-import textwrap
+import requests
+import streamlit as st
 
+HF_API_KEY = st.secrets["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"]
+API_URL = "https://api-inference.huggingface.co/models/gpt2"
+HEADERS = {"Authorization": f"Bearer {HF_API_KEY}"}
 
 def ai_solving(puzzle, solved_ids):
-
-    unsolved=[]
+    unsolved = []
     for w_id in puzzle["grid"]:
         if w_id["id"] not in solved_ids:
-            unsolved.append(w_id)  
+            unsolved.append(w_id)
     if not unsolved:
         return None, None
     chosen = random.choice(unsolved)
-    time.sleep(random.randint(3, 8))  
+    time.sleep(random.randint(3, 8))
     return chosen["id"], chosen["answer"]
 
-
-
-client = None 
+client = None
 
 def ai_comment1(word, game_state):
     prompt = f"""
@@ -29,13 +30,14 @@ def ai_comment1(word, game_state):
     """
 
     if client is None:
-        
+        # Call Hugging Face API instead of OpenAI
+        payload = {"inputs": prompt}
+        response = requests.post(API_URL, headers=HEADERS, json=payload)
+        result = response.json()
+        if isinstance(result, list) and len(result) > 0:
+            return result[0]["generated_text"].strip()
         return f"(Mock AI) I solved '{word}' and I'm {game_state}!"
    
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=50,
-        temperature=0.8
-    )
-    return response.choices[0].message.content.strip()
+    # Keeping your original structure for compatibility
+    return f"(Mock AI) I solved '{word}' and I'm {game_state}!"
+
